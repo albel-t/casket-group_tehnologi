@@ -36,3 +36,7 @@ void LED_OFF()
 {
 	PinWrite(13, 0);
 }
+void LED_Init()
+{
+	PinInit(13, 1);
+}

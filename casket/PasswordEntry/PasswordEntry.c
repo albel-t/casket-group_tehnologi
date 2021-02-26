@@ -9,6 +9,11 @@
 
 void Password()
 {
+		LED_Init();
+		KeyInit(contactInput, contactOutput);
+		ServoInit();
+		Timer2Init();
+
 	if (eeprom_read_byte((uint8_t*)3) == 255)
 	{
 		eeprom_write_byte((uint8_t*)3, 0);

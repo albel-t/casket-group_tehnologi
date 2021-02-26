@@ -28,6 +28,7 @@ void close();
 void LED_ON();
 void LED_OFF();
 
+void LED_Init();
 
 
 
