@@ -6,52 +6,71 @@
  */ 
 
 #include "Keyboard.h"
+#include "Usart.h"
 
-void KeyInit (uint8_t* contactInput, uint8_t* contactOutput)
+
+uint8_t contactInput[3] = {8, 7, 6};         // column
+uint8_t contactOutput[4] = {9, 10 , 11, 12}; // row
+
+void KeyInit()
 {
-	for(int i = 0; i <= 3; i++)
+	for(int i = 0; i < 3; i++)
 	{
 		PinInit (contactInput[i], 0);
+		PinWrite(contactInput[i], 1);
+	}
+	for(int i = 0; i < 4; i++)
+	{
 		PinInit (contactOutput[i], 1);
+		PinWrite(contactOutput[i], 1);
 	}
 }
 
-uint8_t KeyRead(uint8_t* contactInput, uint8_t* contactOutput, uint8_t* reserveButtonSymbol)
+uint8_t KeyRead()
 {
 	uint8_t row;
 	uint8_t column;
 	uint8_t buttonSymbol = 255;
 	uint8_t letGo;
 	
-	for(row = 0; row <= 3; row++)
+	printf("begin keyboard read\r\n");
+	while (buttonSymbol == 255)
 	{
-		KeyFood(contactOutput[row], 1);
-		for(column = 0; column <= 2; column++)
+		for(row = 0; row <= 3 && buttonSymbol == 255; row++)
 		{
-			if (PinRead(contactInput[column]) == 1)
+			KeyFeed(contactOutput[row], 0);
+			for(column = 0; column <= 2 && buttonSymbol == 255; column++)
 			{
-				buttonSymbol = KeyLayout(row, column, &buttonSymbol);
+				//printf("\r\ncolumn = %d row = %d\r\n", column, row);
+				if (PinRead(contactInput[column]) == 0)
+				{
+					buttonSymbol = KeyLayout(row, column, &buttonSymbol);
+				}
 			}
+			KeyFeed(contactOutput[row], 1);
 		}
-		KeyFood(contactOutput[row], 0);
 	}
+	//printf("key pressed\r\n");
+	printf("buttonSymbol = %d\r\n", buttonSymbol);
 	
-	while(letGo)
+	letGo = 1;
+	while(letGo==1)
 	{
+		letGo = 0;
 		for(row = 0; row <= 3; row++)
 		{
-			KeyFood(contactOutput[row], 1);
+			KeyFeed(contactOutput[row], 0);
 			for(column = 0; column <= 2; column++)
 			{
-				if (PinRead(contactInput[column]) == 1)
+				if (PinRead(contactInput[column]) == 0)
 				{
 					letGo = 1;
 				}
 			}
-			KeyFood(contactOutput[row], 0);
+			KeyFeed(contactOutput[row], 1);
 		}
 	}
-	
+	//printf("key unpressed\r\n");
 	return buttonSymbol;
 }
 
@@ -87,7 +106,7 @@ uint8_t KeyLayout(uint8_t row, uint8_t column, uint8_t* buttonSymbol)
 		break;
 	}
 	
-	if (bSymbol == 104)
+	if (bSymbol == 101)
 	{
 		bSymbol = 0;
 	}
@@ -95,7 +114,7 @@ uint8_t KeyLayout(uint8_t row, uint8_t column, uint8_t* buttonSymbol)
 	return bSymbol;
 }
 
-void KeyFood(uint8_t contactOutput, uint8_t pinCondition)
+void KeyFeed(uint8_t contactOutput, uint8_t pinCondition)
 {
 	PinWrite(contactOutput, pinCondition);
 }

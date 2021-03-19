@@ -5,6 +5,7 @@
  *  Author: Alexander
  */ 
 #include "ManagingPins.h"
+#include "Usart.h"
 
 void PinInit (uint8_t pinNumber, uint8_t pinCondition)
 {
@@ -39,30 +40,30 @@ void PinInit (uint8_t pinNumber, uint8_t pinCondition)
 	}
 }
 
-void PinWrite (uint8_t pinNomber, uint8_t pinCondition)
+void PinWrite (uint8_t pinNumber, uint8_t pinCondition)
 {
-	if (pinNomber <= 13)
+	if (pinNumber <= 13)
 	{
 		if (pinCondition == 1)
 		{
-			if ((pinNomber <= 13)&&(pinNomber >= 8))
+			if ((pinNumber <= 13)&&(pinNumber >= 8))
 			{
-				PORTB |= (1 << (pinNomber-8));
+				PORTB |= (1 << (pinNumber-8));
 			}
-			else if ((pinNomber <= 8)&&(pinNomber >= 0))
+			else if ((pinNumber <= 8)&&(pinNumber >= 0))
 			{
-				PORTD |= (1 << pinNomber);
+				PORTD |= (1 << pinNumber);
 			}
 		}
 		else if (pinCondition == 0)
 		{
-			if ((pinNomber <= 13)&&(pinNomber >= 8))
+			if ((pinNumber <= 13)&&(pinNumber >= 8))
 			{
-				PORTB &= ~(1 << (pinNomber-8));
+				PORTB &= ~(1 << (pinNumber-8));
 			}
-			else if ((pinNomber <= 8)&&(pinNomber >= 0))
+			else if ((pinNumber <= 8)&&(pinNumber >= 0))
 			{
-				PORTD &= ~(1 << pinNomber);
+				PORTD &= ~(1 << pinNumber);
 			}
 		}
 	}
@@ -72,31 +73,37 @@ void PinWrite (uint8_t pinNomber, uint8_t pinCondition)
 	}
 }
 
-uint8_t PinRead (uint8_t pinNomber)
+uint8_t PinRead (uint8_t pinNumber)
 {
 	uint8_t pinCondition = 0;
+	uint8_t pin;
 	
-	if (pinNomber <= 13)
+	if (pinNumber <= 13)
 	{
-		if ((pinNomber <= 13)&&(pinNomber >= 8))
+		if ((pinNumber >= 8)&&(pinNumber <= 13))
 		{
-			if ((pinNomber-8) == (PINB & (pinNomber-8)))
+			pinNumber -=8;
+			pin = 1 << pinNumber;
+			if (pin == (PINB & pin))
 			{
 				pinCondition = 1;
 			}
-			else if (!(pinNomber == (PINB & pinNomber)))
+			else
 			{
+				//printf("pinNumber = %d\r\n", pinNumber + 8);
 				pinCondition = 0;
 			}
 		}
-		else if ((pinNomber <= 8)&&(pinNomber >= 0))
+		else if ((pinNumber <= 7)&&(pinNumber >= 0))
 		{
-			if (pinNomber == (PIND & pinNomber))
+			pin = 1 << pinNumber;
+			if (pin == (PIND & pin))
 			{
 				pinCondition = 1;
 			}
-			else if (!(pinNomber == (PIND & pinNomber)))
+			else
 			{
+				//printf("pinNumber = %d\r\n", pinNumber);
 				pinCondition = 0;
 			}
 		}

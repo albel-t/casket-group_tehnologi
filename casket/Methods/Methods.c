@@ -14,7 +14,10 @@ void Sleep()
 
 void ServoInit()
 {
-	ServoWrite(0);
+	Start_PWM_T2();
+ SetPD3_PWM(OPEN_ANGLE);
+  SetPD3_PWM(CLOSE_ANGLE);
+
 }
 
 void open()

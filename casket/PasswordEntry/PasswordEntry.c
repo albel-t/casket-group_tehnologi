@@ -1,89 +1,129 @@
 /*
- * PasswordEntry.c
- *
- * Created: 19.02.2021 17:32:59
- *  Author: Alexander
- */ 
+* PasswordEntry.c
+*
+* Created: 19.02.2021 17:32:59
+*  Author: Alexander
+*/
 #include "PasswordEntry.h"
+#include "Usart.h"
 
 
 void Password()
 {
-		LED_Init();
-		KeyInit(contactInput, contactOutput);
-		ServoInit();
-		Timer2Init();
+	printf("LED_Init\r\n");
+	LED_Init();
+	printf("KeyInit\r\n");
+	KeyInit();
+	printf("Timer2Init\r\n");
+	Timer2Init();
+	printf("ServoInit\r\n");
+	ServoInit();
+	printf("EndInit\r\n");
+	
 
 	if (eeprom_read_byte((uint8_t*)3) == 255)
 	{
 		eeprom_write_byte((uint8_t*)3, 0);
 		WriteRightPassword(7777);
 	}
+	
+	printf("ReadRightPassword begin\r\n");
 	RightPassword = ReadRightPassword();
-	enter_password:
-	ButtonSymbol = KeyRead(contactInput, contactOutput, &ButtonSymbol);
-	if ((ButtonSymbol>=0) || (ButtonSymbol<=9))
+	printf("ReadRightPassword = %d\r\n", RightPassword);
+	
+	while(1)
 	{
-		IntroducedPassword = ReadPassword(ButtonSymbol);
-		ButtonSymbol = ResetPassword(IntroducedPassword);
+		ButtonSymbol = KeyRead();
+		//printf("ButtonSymbol = %d\r\n", ButtonSymbol);
+		
+		if ((ButtonSymbol>=0) && (ButtonSymbol<=9))
+		{
+			ReadPassword(&IntroducedPassword, ButtonSymbol);
+			printf("IntroducedPassword = %d\r\n", IntroducedPassword);
+		}
+		//ButtonSymbol = ResetPassword(IntroducedPassword);
 		if (ButtonSymbol==100)
 		{
+			printf("Reset password\r\n");
 			IntroducedPassword=0;
-			goto enter_password;
-		} 
+		}
 		else if (ButtonSymbol==102)
 		{
+			printf("try OpenDoor IntroducedPassword = %d\r\n", IntroducedPassword);
+/*			ButtonSymbol = ResetPassword(IntroducedPassword);
+			if(ButtonSymbol==255)
+			{
+				ButtonSymbol = KeyRead();
+			}*/
 			OpenDoor(IntroducedPassword);
+			
 		}
 	}
-	else if (ButtonSymbol==102)
-	{
-		goto enter_password;
-	}
-	Sleep();
+
 }
+
 
 void OpenDoor(uint16_t IntroducedPassword)
 {
 	uint8_t LED = 0;
 	if (ReadRightPassword() == IntroducedPassword)
 	{
+		printf("Right password\r\n");
 		open();
 		enter_new_password:
-		ButtonSymbol = KeyRead(contactInput, contactOutput, &ButtonSymbol);
-		if ((ButtonSymbol>=0) || (ButtonSymbol<=9))
+		while(1)
 		{
-			IntroducedPassword = ReadPassword(ButtonSymbol);
-			ButtonSymbol = ResetPassword(IntroducedPassword);
-			if (ButtonSymbol==100)
+		    ButtonSymbol = KeyRead();
+			if ((ButtonSymbol>=0) && (ButtonSymbol<=9))
 			{
-				IntroducedPassword=0;
+				ReadPassword(&IntroducedPassword, ButtonSymbol);
 				goto enter_new_password;
+			}
+ 
+			if (ButtonSymbol==1)
+			{
+				while(1)
+				{
+					ButtonSymbol = KeyRead();
+					//printf("ButtonSymbol = %d\r\n", ButtonSymbol);
+					
+					if ((ButtonSymbol>=0) && (ButtonSymbol<=9))
+					{
+						ReadPassword(&IntroducedPassword, ButtonSymbol);
+						printf("IntroducedPassword = %d\r\n", IntroducedPassword);
+					}
+					//ButtonSymbol = ResetPassword(IntroducedPassword);
+					if (ButtonSymbol==100)
+					{
+						break;
+					}
+					else if (ButtonSymbol==102)
+					{
+						printf("IntroducedPassword = %d\r\n", IntroducedPassword);
+						printf("RightPassword = IntroducedPassword\r\n", IntroducedPassword);
+						RightPassword = IntroducedPassword;
+					}
+				}
 			}
 			else if (ButtonSymbol==102)
 			{
-				RightPassword = IntroducedPassword;
-				goto enter_new_password;
+				close();
+				break;
 			}
-		}
-		else if (ButtonSymbol==100)
-		{
-			if (LED == 0)
-			{
-				LED_ON();
-				LED = 1;
+		 	
+		 	else if (ButtonSymbol==100)
+		 	{
+				if(LED==0)
+				{
+					LED=1;
+					LED_ON();
+				}
+				else
+				{
+					LED=0;
+					LED_OFF();
+				}
 			}
-			
-			if (LED == 1)
-			{
-				LED_OFF();
-				LED = 0;
-			}
-			goto enter_new_password;
-		}
-		else if (ButtonSymbol==102)
-		{
-			close();
 		}
 	}
 	Sleep();
@@ -92,54 +132,46 @@ void OpenDoor(uint16_t IntroducedPassword)
 uint8_t ResetPassword(uint8_t IntroducedPassword)
 {
 	uint8_t thisButtonSymbol;
-	thisButtonSymbol = KeyRead(contactInput, contactOutput, &ButtonSymbol);
 	if (IntroducedPassword == 1862)
 	{
-		if((thisButtonSymbol>=0)&&(thisButtonSymbol<=9))
+		thisButtonSymbol = KeyRead();
+		if(thisButtonSymbol == 5)
 		{
-			IntroducedPassword = (IntroducedPassword*10) + ButtonSymbol;
-			
-			if (IntroducedPassword == 18625)
-			{
-				GlobalReset();
-			}
+			GlobalReset();
 		}
 		else
 		{
 			return thisButtonSymbol;
 		}
 	}
-	else
-	{
-		return thisButtonSymbol;
-	}
+	return 255;
 }
 
-uint16_t ReadPassword(uint8_t ButtonSymbol)
+void ReadPassword(uint16_t* introducedPasseord, uint8_t symbol)
 {
-	uint16_t thisIntroducedPassword;
-	uint8_t thisButtonSymbol = ButtonSymbol;
-	for (;ButtonSymbol<=9;)
+	uint32_t thisIntroducedPassword = *introducedPasseord;
+	
+	thisIntroducedPassword = (thisIntroducedPassword*10) + symbol;
+	
+	if (thisIntroducedPassword > 9999)
 	{
-		if (IntroducedPassword > 9999)
-		{
-			thisIntroducedPassword = thisButtonSymbol;
-		}
-		else
-		{
-			thisIntroducedPassword = (IntroducedPassword*10) + thisButtonSymbol;
-		}
-		thisButtonSymbol = KeyRead(contactInput, contactOutput, &ButtonSymbol);
+		thisIntroducedPassword = (uint16_t)(thisIntroducedPassword % 10000);
 	}
-	return thisIntroducedPassword;
+	*introducedPasseord = thisIntroducedPassword;
 }
 
 
 void WriteRightPassword(uint16_t rightPassword)
 {
+	printf("rightPassword = %d\r\n", rightPassword);
 	if (eeprom_read_word((uint16_t*)0) != rightPassword)
 	{
+		printf("eeprom_read_word != rightPassword\r\n");
 		eeprom_write_word((uint16_t*)0, rightPassword);
+	}
+	else
+	{
+		printf("eeprom_read_word == rightPassword\r\n");
 	}
 }
 uint16_t ReadRightPassword()

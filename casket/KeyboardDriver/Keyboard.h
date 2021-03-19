@@ -14,13 +14,16 @@
 #include "ManagingPins.h"
 #include "PasswordEntry.h"
 
-void KeyInit (uint8_t* contactInput, uint8_t* contactOutput);
+uint8_t contactInput[3];
+uint8_t contactOutput[4];
 
-uint8_t KeyRead(uint8_t* contactInput, uint8_t* contactOutput, uint8_t* reserveButtonSymbol);
+void KeyInit ();
+
+uint8_t KeyRead();
 
 uint8_t KeyLayout(uint8_t row, uint8_t column, uint8_t* buttonSymbol);
 
-void KeyFood(uint8_t contactOutput, uint8_t pinCondition);
+void KeyFeed(uint8_t contactOutput, uint8_t pinCondition);
 
 
 #endif /* KEYBOARD_H_ */
